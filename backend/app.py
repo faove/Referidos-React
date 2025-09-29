@@ -252,17 +252,24 @@ with app.app_context():
     # Create admin user if it doesn't exist
     admin = User.query.filter_by(username='admin').first()
     if not admin:
-        admin_password = bcrypt.generate_password_hash('admin123').decode('utf-8')
-        admin = User(
-            username='admin',
-            email='admin@elantar.com',
-            password_hash=admin_password,
-            is_admin=True,
-            referral_code=generate_referral_code()
-        )
-        db.session.add(admin)
-        db.session.commit()
-        print("✅ Admin user created successfully!")
+        # Also check if email already exists
+        existing_email = User.query.filter_by(email='admin@elantar.com').first()
+        if not existing_email:
+            admin_password = bcrypt.generate_password_hash('admin123').decode('utf-8')
+            admin = User(
+                username='admin',
+                email='admin@elantar.com',
+                password_hash=admin_password,
+                is_admin=True,
+                referral_code=generate_referral_code()
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Admin user created successfully!")
+        else:
+            print("ℹ️ Admin user already exists with this email")
+    else:
+        print("ℹ️ Admin user already exists")
 
 # New API endpoints for enhanced functionality
 @app.route('/api/network', methods=['GET'])
