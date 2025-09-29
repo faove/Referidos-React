@@ -1,0 +1,45 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: elantar-backend-dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - backend_data:/app/data
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=1   
+    networks:
+      - elantar_net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: elantar-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true    
+    depends_on:
+      - backend
+    networks:
+      - elantar_net
+    restart: unless-stopped
+
+volumes:
+  backend_data:
+
+networks:
+  elantar_net:
+    external: true
