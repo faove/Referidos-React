@@ -40,7 +40,7 @@ services:
       - "traefik.http.routers.elantar-https.rule=Host(`panel.erpelantar.com`)"
       - "traefik.http.routers.elantar-https.tls.certresolver=letsencrypt"
       # --- Servicio que apunta al frontend ---
-      - "traefik.http.services.elantar-service.loadbalancer.server.port=80"
+      - "traefik.http.services.elantar-service.loadbalancer.server.port=3000"
     environment:
       - REACT_APP_API_URL=https://panel.erpelantar.com/api
     depends_on:
