@@ -68,9 +68,12 @@ function UserDashboard() {
       const response = await axios.get(`${process.env.REACT_APP_API_URL}/referral-links`, {
         withCredentials: true
       });
-      setReferralLinks(response.data);
+      // Ensure response.data is an array
+      setReferralLinks(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
+      console.error('Error fetching referral links:', error);
       toast.error('Error loading referral links');
+      setReferralLinks([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -96,11 +99,12 @@ function UserDashboard() {
     toast.success('Link copied to clipboard!');
   };
 
-  // Calculate stats
-  const totalClicks = referralLinks.reduce((sum, link) => sum + link.clicks, 0);
-  const totalConversions = referralLinks.reduce((sum, link) => sum + (link.conversions || 0), 0);
+  // Calculate stats - ensure referralLinks is an array
+  const safeReferralLinks = Array.isArray(referralLinks) ? referralLinks : [];
+  const totalClicks = safeReferralLinks.reduce((sum, link) => sum + (link.clicks || 0), 0);
+  const totalConversions = safeReferralLinks.reduce((sum, link) => sum + (link.conversions || 0), 0);
   const conversionRate = totalClicks > 0 ? (totalConversions / totalClicks * 100) : 0;
-  const activeLinks = referralLinks.filter(link => link.is_active).length;
+  const activeLinks = safeReferralLinks.filter(link => link.is_active).length;
 
   // Simulate additional stats
   const earnings = totalConversions * 15; // $15 per conversion
@@ -306,7 +310,7 @@ function UserDashboard() {
           </div>
 
           <div className="space-y-4">
-            {referralLinks.slice(0, 3).map((link, index) => (
+            {safeReferralLinks.slice(0, 3).map((link, index) => (
               <motion.div
                 key={link.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -321,7 +325,7 @@ function UserDashboard() {
               </motion.div>
             ))}
             
-            {referralLinks.length === 0 && (
+            {safeReferralLinks.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -462,7 +466,7 @@ function UserDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {referralLinks.map((link, index) => (
+        {safeReferralLinks.map((link, index) => (
           <motion.div
             key={link.id}
             initial={{ opacity: 0, y: 20 }}
