@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/user/profile', {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/user/profile`, {
         withCredentials: true
       });
       setUser(response.data);
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/login', {
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/login`, {
         username,
         password
       }, {
@@ -63,7 +63,7 @@ export function AuthProvider({ children }) {
         requestData.referralLinkCode = referralLinkCode;
       }
       
-      const response = await axios.post('http://localhost:5000/api/register', requestData);
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/register`, requestData);
       
       // Clear the referral link code from localStorage after successful registration
       if (referralLinkCode) {
@@ -81,7 +81,7 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await axios.post('http://localhost:5000/api/logout', {}, {
+        await axios.post(`${process.env.REACT_APP_API_URL}/logout`, {}, {
         withCredentials: true
       });
     } catch (error) {

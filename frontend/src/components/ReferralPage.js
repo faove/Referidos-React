@@ -24,7 +24,7 @@ function ReferralPage() {
 
   const trackReferralClick = useCallback(async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/referral/${linkCode}`);
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/referral/${linkCode}`);
       setReferrer(response.data.referrer);
       
       // Store the referral link code in localStorage for later use during registration
@@ -42,7 +42,7 @@ function ReferralPage() {
 
   const handleConversion = async () => {
     try {
-      await axios.post(`http://localhost:5000/api/referral/${linkCode}/convert`);
+      await axios.post(`${process.env.REACT_APP_API_URL}/referral/${linkCode}/convert`);
       setShowConfetti(true);
       toast.success('¡Gracias! Tu conversión ha sido registrada.');
       setTimeout(() => setShowConfetti(false), 5000);

@@ -182,7 +182,7 @@ def get_referral_links():
             'clicks': link.clicks,
             'conversions': link.conversions,
             'created_at': link.created_at.isoformat(),
-            'url': f"http://localhost:3000/referral/{link.link_code}"
+            'url': f"https://panel.erpelantar.com/referral/{link.link_code}"
         })
     
     return jsonify(links_data), 200
@@ -206,7 +206,7 @@ def create_referral_link():
     return jsonify({
         'id': referral_link.id,
         'link_code': link_code,
-        'url': f"http://localhost:3000/referral/{link_code}",
+        'url': f"https://panel.erpelantar.com/referral/{link_code}",
         'created_at': referral_link.created_at.isoformat()
     }), 201
 

@@ -65,7 +65,7 @@ function UserDashboard() {
 
   const fetchReferralLinks = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/referral-links', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/referral-links`, {
         withCredentials: true
       });
       setReferralLinks(response.data);
@@ -79,7 +79,7 @@ function UserDashboard() {
   const createReferralLink = async () => {
     setCreatingLink(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/referral-links', {}, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/referral-links`, {}, {
         withCredentials: true
       });
       setReferralLinks([...referralLinks, response.data]);
