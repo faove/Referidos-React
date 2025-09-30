@@ -42,7 +42,7 @@ services:
       # --- Servicio que apunta al frontend ---
       - "traefik.http.services.elantar-service.loadbalancer.server.port=80"
     environment:
-      - REACT_APP_API_URL=http://panel.erpelantar.com/api
+      - REACT_APP_API_URL=https://panel.erpelantar.com/api
     depends_on:
       - backend
     networks:
