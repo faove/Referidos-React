@@ -2,6 +2,12 @@
 
 Un sistema desarrollado por Elantar para satisfacer la demanda de software de calidad para gestionar programas de referidos. Built with React + Tailwind CSS frontend and Flask Python backend with SQLite database.
 
+## Members
+
+- Johan
+- Ygor
+- Francisco
+
 ## Features
 
 - **Dual Authentication System**: Separate login for admin and regular users
