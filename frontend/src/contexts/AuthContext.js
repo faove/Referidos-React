@@ -7,6 +7,21 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+// -----------------------------------------------------------------------------
+// CONFIGURACIÓN MULTI-ENTORNO (Corrección Clave)
+// -----------------------------------------------------------------------------
+// 1. Usa la variable de entorno (para desarrollo: http://localhost:5000).
+// 2. Si no está definida (producción), usa la URL final.
+const BASE_URL = process.env.REACT_APP_API_URL || 'https://panel.erpelantar.com';
+const API_BASE_URL = `${BASE_URL}/api`;
+
+// -----------------------------------------------------------------------------
+// CONFIGURACIÓN GLOBAL DE AXIOS
+// IMPORTANTE: Asegura que Axios SIEMPRE envíe cookies con todas las peticiones
+axios.defaults.withCredentials = true;
+// -----------------------------------------------------------------------------
+
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,11 +30,11 @@ export function AuthProvider({ children }) {
     checkAuthStatus();
   }, []);
 
+  // Verificar el estado de autenticación al cargar la app
   const checkAuthStatus = async () => {
     try {
-      const response = await axios.get(`https://panel.erpelantar.com/api/user/profile`, {
-        withCredentials: true
-      });
+      // USANDO API_BASE_URL
+      const response = await axios.get(`${API_BASE_URL}/user/profile`);
       setUser(response.data);
     } catch (error) {
       setUser(null);
@@ -30,11 +45,10 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     try {
-      const response = await axios.post(`https://panel.erpelantar.com/api/login`, {
+      // USANDO API_BASE_URL (Axios ya tiene withCredentials=true globalmente)
+      const response = await axios.post(`${API_BASE_URL}/login`, {
         username,
         password
-      }, {
-        withCredentials: true
       });
       
       setUser(response.data.user);
@@ -49,7 +63,6 @@ export function AuthProvider({ children }) {
 
   const register = async (username, email, password) => {
     try {
-      // Get referral link code from localStorage if it exists
       const referralLinkCode = localStorage.getItem('referralLinkCode');
       
       const requestData = {
@@ -58,14 +71,13 @@ export function AuthProvider({ children }) {
         password
       };
       
-      // Include referral link code if available
       if (referralLinkCode) {
         requestData.referralLinkCode = referralLinkCode;
       }
       
-      const response = await axios.post(`https://panel.erpelantar.com/api/register`, requestData);
+      // USANDO API_BASE_URL (La registración no necesita withCredentials ya que no se envían cookies)
+      const response = await axios.post(`${API_BASE_URL}/register`, requestData);
       
-      // Clear the referral link code from localStorage after successful registration
       if (referralLinkCode) {
         localStorage.removeItem('referralLinkCode');
       }
@@ -81,9 +93,8 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await axios.post(`https://panel.erpelantar.com/api/logout`, {}, {
-        withCredentials: true
-      });
+      // USANDO API_BASE_URL
+      await axios.post(`${API_BASE_URL}/logout`);
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
     } finally {

@@ -26,6 +26,17 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import NotificationsCenter from './NotificationsCenter';
 import SettingsPanel from './SettingsPanel';
 
+
+// -----------------------------------------------------------------------------
+// CONFIGURACIÓN MULTI-ENTORNO (Corrección Aplicada)
+// -----------------------------------------------------------------------------
+// 1. Usa process.env.REACT_APP_API_URL para desarrollo (ej. http://localhost:5000).
+// 2. Si no está definida (producción), usa la URL final como fallback.
+const BASE_URL = process.env.REACT_APP_API_URL || 'https://panel.erpelantar.com';
+const API_BASE_URL = `${BASE_URL}/api`;
+// -----------------------------------------------------------------------------
+
+
 function UserDashboard() {
   const { user, logout } = useAuth();
   const [referralLinks, setReferralLinks] = useState([]);
@@ -55,6 +66,7 @@ function UserDashboard() {
 
   const fetchAnalyticsData = async () => {
     try {
+      // Las llamadas a fetchUserStats y fetchUserAnalytics usan la corrección de URL en analytics.js
       const [statsResponse, analyticsResponse] = await Promise.all([
         fetchUserStats(),
         fetchUserAnalytics()
@@ -72,7 +84,8 @@ function UserDashboard() {
   useEffect(() => {
     const fetchNetworkData = async () => {
       try {
-        const response = await axios.get('https://panel.erpelantar.com/api/network', {
+        // CORRECCIÓN APLICADA: Usando API_BASE_URL
+        const response = await axios.get(`${API_BASE_URL}/network`, {
           withCredentials: true
         });
         setNetworkData(response.data);
@@ -99,7 +112,8 @@ function UserDashboard() {
   useEffect(() => {
     const fetchAchievements = async () => {
       try {
-        const response = await axios.get('https://panel.erpelantar.com/api/achievements', {
+        // CORRECCIÓN APLICADA: Usando API_BASE_URL
+        const response = await axios.get(`${API_BASE_URL}/achievements`, {
           withCredentials: true
         });
         setAchievements(response.data);
@@ -124,7 +138,8 @@ function UserDashboard() {
 
   const fetchReferralLinks = async () => {
     try {
-      const response = await axios.get('https://panel.erpelantar.com/api/referral-links', {
+      // CORRECCIÓN APLICADA: Usando API_BASE_URL
+      const response = await axios.get(`${API_BASE_URL}/referral-links`, {
         withCredentials: true
       });
       // Ensure response.data is an array
@@ -141,7 +156,8 @@ function UserDashboard() {
   const createReferralLink = async () => {
     setCreatingLink(true);
     try {
-      const response = await axios.post('https://panel.erpelantar.com/api/referral-links', {}, {
+      // CORRECCIÓN APLICADA: Usando API_BASE_URL
+      const response = await axios.post(`${API_BASE_URL}/referral-links`, {}, {
         withCredentials: true
       });
       setReferralLinks([...referralLinks, response.data]);

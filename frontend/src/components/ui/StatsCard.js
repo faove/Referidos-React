@@ -105,7 +105,7 @@ function StatsCard({
       </div>
 
       {/* Trend Chart or Additional Info */}
-      {trend && (
+      {trend && trend.length > 0 && (
         <div className="mt-4 pt-4 border-t border-white/20">
           <div className="flex items-center justify-between text-2xs text-secondary-500">
             <span>{trendPeriodText}</span>
@@ -116,18 +116,27 @@ function StatsCard({
             </span>
           </div>
           
-          {/* Simple trend visualization */}
+          {/* Simple trend visualization (CORRECCIÓN DE SINTAXIS APLICADA) */}
           <div className="mt-2 h-8 flex items-end space-x-1">
-            {trend.map((point, index) => (
-              <motion.div
-                key={index}
-                initial={{ height: 0 }}
-                animate={{ height: `${(point / Math.max(...trend)) * 100}%` }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                className={`flex-1 bg-gradient-to-t ${gradient} rounded-sm opacity-60 group-hover:opacity-100 transition-opacity duration-300`}
-                style={{ minHeight: '2px' }}
-              />
-            ))}
+            {
+              (() => { // Usamos una IIFE para declarar variables dentro del JSX
+                // Calculamos el valor máximo de forma segura
+                const maxValue = Math.max(...trend);
+                const safeMax = maxValue > 0 ? maxValue : 1;
+                
+                return trend.map((point, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ height: 0 }}
+                    // Usamos safeMax para calcular la altura
+                    animate={{ height: `${(point / safeMax) * 100}%` }}
+                    transition={{ delay: index * 0.1, duration: 0.5 }}
+                    className={`flex-1 bg-gradient-to-t ${gradient} rounded-sm opacity-60 group-hover:opacity-100 transition-opacity duration-300`}
+                    style={{ minHeight: '2px' }}
+                  />
+                ));
+              })()
+            }
           </div>
         </div>
       )}

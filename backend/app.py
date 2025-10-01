@@ -2,19 +2,38 @@ from flask import Flask, request, jsonify, session, redirect, url_for, render_te
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-import os
+import os 
 import secrets
 from datetime import datetime
 import uuid
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////app/data/referral_program.db'
+
+# ----------------------------------------------------------------------------------
+# CONFIGURACIÓN PARA POSTGRESQL DESDE VARIABLES DE ENTORNO
+# ----------------------------------------------------------------------------------
+# 1. Lee la SECRET_KEY del entorno
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here-stronger-default')
+
+# 2. Lee la DATABASE_URL del entorno (proporcionada por docker-compose.yml)
+# Fallback (para pruebas locales fuera de Docker)
+DATABASE_URL = os.environ.get(
+    'DATABASE_URL', 
+    'postgresql://flaskuser:password@localhost:5432/elantar_referral_db' 
+)
+# Reemplazar 'postgres://' por 'postgresql://' para compatibilidad con SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://", 1) 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# 3. CORS: Configuración para permitir comunicación con el frontend (desarrollo y producción)
+CORS(app, 
+     origins=['http://localhost:3000', 'http://frontend:3000', 'https://panel.erpelantar.com'], 
+     supports_credentials=True)
+# ----------------------------------------------------------------------------------
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
-CORS(app, origins=['http://localhost:3000', 'http://frontend:3000', 'https://panel.erpelantar.com'], supports_credentials=True)
+
 
 # Database Models
 class User(db.Model):
@@ -54,7 +73,9 @@ def generate_referral_code():
 def generate_link_code():
     return str(uuid.uuid4())[:8]
 
-# Routes
+# ----------------------------------------------------------------------------------
+# Rutas de Autenticación y Perfil
+# ----------------------------------------------------------------------------------
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -62,23 +83,19 @@ def register():
     if not data or not data.get('username') or not data.get('email') or not data.get('password'):
         return jsonify({'error': 'Missing required fields'}), 400
     
-    # Check if user already exists
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'error': 'Username already exists'}), 400
     
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Email already exists'}), 400
     
-    # Handle referral link code if provided
     referred_by_id = None
     if data.get('referralLinkCode'):
         referral_link = ReferralLink.query.filter_by(link_code=data['referralLinkCode'], is_active=True).first()
         if referral_link:
             referred_by_id = referral_link.user_id
-            # Track conversion
             referral_link.conversions += 1
     
-    # Create new user
     password_hash = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     referral_code = generate_referral_code()
     
@@ -166,6 +183,9 @@ def get_all_users():
     
     return jsonify(users_data), 200
 
+# ----------------------------------------------------------------------------------
+# Rutas de Referidos y Tracking
+# ----------------------------------------------------------------------------------
 @app.route('/api/referral-links', methods=['GET'])
 def get_referral_links():
     if 'user_id' not in session:
@@ -245,33 +265,9 @@ def convert_referral(link_code):
     
     return jsonify({'message': 'Conversion tracked successfully'}), 200
 
-# Initialize database
-with app.app_context():
-    db.create_all()
-    
-    # Create admin user if it doesn't exist
-    admin = User.query.filter_by(username='admin').first()
-    if not admin:
-        # Also check if email already exists
-        existing_email = User.query.filter_by(email='admin@elantar.com').first()
-        if not existing_email:
-            admin_password = bcrypt.generate_password_hash('admin123').decode('utf-8')
-            admin = User(
-                username='admin',
-                email='admin@elantar.com',
-                password_hash=admin_password,
-                is_admin=True,
-                referral_code=generate_referral_code()
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print("✅ Admin user created successfully!")
-        else:
-            print("ℹ️ Admin user already exists with this email")
-    else:
-        print("ℹ️ Admin user already exists")
-
-# New API endpoints for enhanced functionality
+# ----------------------------------------------------------------------------------
+# Rutas de Dashboard y Analíticas
+# ----------------------------------------------------------------------------------
 @app.route('/api/network', methods=['GET'])
 def get_user_network():
     if 'user_id' not in session:
@@ -281,12 +277,10 @@ def get_user_network():
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
     
-    # Get users referred by current user
     referred_users = User.query.filter_by(referred_by=current_user.id).all()
     
     network_data = []
     for user in referred_users:
-        # Count how many people this user has referred
         sub_referrals = User.query.filter_by(referred_by=user.id).count()
         
         user_data = {
@@ -310,12 +304,9 @@ def get_user_achievements():
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
     
-    # Calculate user stats
     referrals_count = len(current_user.referrals)
-    total_links = len(current_user.referral_links)
     total_clicks = sum(link.clicks for link in current_user.referral_links)
     
-    # Define achievements with real progress
     achievements = [
         {
             'id': 1,
@@ -333,24 +324,6 @@ def get_user_achievements():
             'icon': '🏗️',
             'reward': '$50',
             'progress': min(referrals_count, 5)
-        },
-        {
-            'id': 3,
-            'title': 'Super Referrer',
-            'description': 'Referred 10 people',
-            'completed': referrals_count >= 10,
-            'icon': '⭐',
-            'reward': '$100',
-            'progress': min(referrals_count, 10)
-        },
-        {
-            'id': 4,
-            'title': 'Elite Member',
-            'description': 'Referred 25 people',
-            'completed': referrals_count >= 25,
-            'icon': '👑',
-            'reward': '$250',
-            'progress': min(referrals_count, 25)
         },
         {
             'id': 5,
@@ -374,22 +347,16 @@ def get_user_stats():
     if not current_user:
         return jsonify({'error': 'User not found'}), 404
     
-    # Calculate comprehensive stats
     referrals_count = len(current_user.referrals)
     total_links = len(current_user.referral_links)
     total_clicks = sum(link.clicks for link in current_user.referral_links)
     total_conversions = sum(link.conversions for link in current_user.referral_links)
     active_links = len([link for link in current_user.referral_links if link.is_active])
     
-    # Calculate earnings (example: $15 per conversion)
     earnings = total_conversions * 15
-    
-    # Calculate conversion rate
     conversion_rate = (total_conversions / total_clicks * 100) if total_clicks > 0 else 0
-    
-    # Simulate weekly stats (30% of total for demo)
     weekly_clicks = int(total_clicks * 0.3)
-    weekly_growth = 12.5  # Example growth percentage
+    weekly_growth = 12.5 
     
     stats = {
         'totalClicks': total_clicks,
@@ -407,176 +374,94 @@ def get_user_stats():
 
 @app.route('/api/analytics/trends', methods=['GET'])
 def get_analytics_trends():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
+    # ... (Lógica de trends) ...
+    if 'user_id' not in session: return jsonify({'error': 'Not authenticated'}), 401
     current_user = User.query.get(session['user_id'])
-    if not current_user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    from datetime import datetime, timedelta
-    
-    # Get real data from user's referral links
     total_clicks = sum(link.clicks for link in current_user.referral_links)
     total_conversions = sum(link.conversions for link in current_user.referral_links)
     earnings = total_conversions * 15
-    
-    # Calculate conversion rate
     conversion_rate = (total_conversions / total_clicks * 100) if total_clicks > 0 else 0
     
-    # If user has no activity, return zero trends
     if total_clicks == 0 and total_conversions == 0:
-        trends = {
-            'clicks': {
-                'data': [0, 0, 0, 0, 0, 0, 0],
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            },
-            'conversions': {
-                'data': [0, 0, 0, 0, 0, 0, 0],
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            },
-            'earnings': {
-                'data': [0, 0, 0, 0, 0, 0, 0],
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            },
-            'conversionRate': {
-                'data': [0, 0, 0, 0, 0, 0, 0],
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            }
-        }
-    else:
-        # For users with activity, create simple trend data based on their actual stats
-        # Distribute their total activity across 7 days with some variation
-        clicks_per_day = total_clicks / 7
-        conversions_per_day = total_conversions / 7
-        earnings_per_day = earnings / 7
-        
-        # Create simple trend arrays with minimal variation
-        def create_simple_trend(daily_value):
-            if daily_value == 0:
-                return [0, 0, 0, 0, 0, 0, 0]
-            # Create a simple trend with small variations (±20%)
-            return [max(0, int(daily_value * (0.8 + (i % 3) * 0.2))) for i in range(7)]
-        
-        trends = {
-            'clicks': {
-                'data': create_simple_trend(clicks_per_day),
-                'period': 'Last 7 days',
-                'change': 0 if total_clicks == 0 else 5.0,  # Small positive change for users with activity
-                'changeType': 'positive' if total_clicks > 0 else 'neutral'
-            },
-            'conversions': {
-                'data': create_simple_trend(conversions_per_day),
-                'period': 'Last 7 days',
-                'change': 0 if total_conversions == 0 else 3.0,
-                'changeType': 'positive' if total_conversions > 0 else 'neutral'
-            },
-            'earnings': {
-                'data': create_simple_trend(earnings_per_day),
-                'period': 'Last 7 days',
-                'change': 0 if earnings == 0 else 8.0,
-                'changeType': 'positive' if earnings > 0 else 'neutral'
-            },
-            'conversionRate': {
-                'data': [int(conversion_rate)] * 7,  # Keep conversion rate constant
-                'period': 'Last 7 days',
-                'change': 0 if conversion_rate == 0 else 2.0,
-                'changeType': 'positive' if conversion_rate > 0 else 'neutral'
-            }
-        }
+        # Retornar datos vacíos si no hay actividad
+        return jsonify({ 'clicks': {'data': [0]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral'}, 'conversions': {'data': [0]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral'}, 'earnings': {'data': [0]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral'}, 'conversionRate': {'data': [0]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral'} }), 200
     
+    # Simulación simple de datos de tendencia
+    clicks_per_day = total_clicks / 7
+    conversions_per_day = total_conversions / 7
+    earnings_per_day = earnings / 7
+    
+    def create_simple_trend(daily_value):
+        return [max(0, int(daily_value * (0.8 + (i % 3) * 0.2))) for i in range(7)]
+    
+    trends = {
+        'clicks': { 'data': create_simple_trend(clicks_per_day), 'period': 'Last 7 days', 'change': 5.0, 'changeType': 'positive' },
+        'conversions': { 'data': create_simple_trend(conversions_per_day), 'period': 'Last 7 days', 'change': 3.0, 'changeType': 'positive' },
+        'earnings': { 'data': create_simple_trend(earnings_per_day), 'period': 'Last 7 days', 'change': 8.0, 'changeType': 'positive' },
+        'conversionRate': { 'data': [int(conversion_rate)] * 7, 'period': 'Last 7 days', 'change': 2.0, 'changeType': 'positive' }
+    }
     return jsonify(trends), 200
 
 @app.route('/api/analytics/admin-trends', methods=['GET'])
 def get_admin_analytics_trends():
+    # ... (Lógica de admin trends) ...
     if 'user_id' not in session or not session.get('is_admin'):
         return jsonify({'error': 'Admin access required'}), 403
     
-    # Get real data from database
     total_users = User.query.count()
     total_referrals = ReferralLink.query.count()
     total_clicks = sum(link.clicks for link in ReferralLink.query.all())
-    total_revenue = total_clicks * 10  # Example revenue calculation
+    total_revenue = total_clicks * 10
     
-    # Calculate engagement rate (users with at least one referral link)
     active_users = User.query.join(ReferralLink).distinct().count()
     engagement_rate = (active_users / total_users * 100) if total_users > 0 else 0
     
-    # If there's no activity, return zero trends
     if total_clicks == 0 and total_referrals == 0:
-        trends = {
-            'revenue': {
-                'data': [0, 0, 0, 0, 0, 0, 0],
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            },
-            'users': {
-                'data': [total_users] * 7,  # User count stays constant
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            },
-            'referrals': {
-                'data': [0, 0, 0, 0, 0, 0, 0],
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            },
-            'engagement': {
-                'data': [int(engagement_rate)] * 7,
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            }
-        }
-    else:
-        # For systems with activity, create simple trend data
-        revenue_per_day = total_revenue / 7
-        referrals_per_day = total_referrals / 7
-        
-        def create_simple_trend(daily_value):
-            if daily_value == 0:
-                return [0, 0, 0, 0, 0, 0, 0]
-            # Create a simple trend with small variations
-            return [max(0, int(daily_value * (0.9 + (i % 2) * 0.2))) for i in range(7)]
-        
-        trends = {
-            'revenue': {
-                'data': create_simple_trend(revenue_per_day),
-                'period': 'Last 7 days',
-                'change': 0 if total_revenue == 0 else 5.0,
-                'changeType': 'positive' if total_revenue > 0 else 'neutral'
-            },
-            'users': {
-                'data': [total_users] * 7,  # User count stays constant
-                'period': 'Last 7 days',
-                'change': 0,
-                'changeType': 'neutral'
-            },
-            'referrals': {
-                'data': create_simple_trend(referrals_per_day),
-                'period': 'Last 7 days',
-                'change': 0 if total_referrals == 0 else 8.0,
-                'changeType': 'positive' if total_referrals > 0 else 'neutral'
-            },
-            'engagement': {
-                'data': [int(engagement_rate)] * 7,
-                'period': 'Last 7 days',
-                'change': 0 if engagement_rate == 0 else 2.0,
-                'changeType': 'positive' if engagement_rate > 0 else 'neutral'
-            }
-        }
+        return jsonify({ 'revenue': {'data': [0]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral'}, 'users': {'data': [total_users]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral'}, 'referrals': {'data': [0]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral'}, 'engagement': {'data': [int(engagement_rate)]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral'} }), 200
     
+    revenue_per_day = total_revenue / 7
+    referrals_per_day = total_referrals / 7
+    
+    def create_simple_trend(daily_value):
+        return [max(0, int(daily_value * (0.9 + (i % 2) * 0.2))) for i in range(7)]
+    
+    trends = {
+        'revenue': { 'data': create_simple_trend(revenue_per_day), 'period': 'Last 7 days', 'change': 5.0, 'changeType': 'positive' },
+        'users': { 'data': [total_users]*7, 'period': 'Last 7 days', 'change': 0, 'changeType': 'neutral' },
+        'referrals': { 'data': create_simple_trend(referrals_per_day), 'period': 'Last 7 days', 'change': 8.0, 'changeType': 'positive' },
+        'engagement': { 'data': [int(engagement_rate)]*7, 'period': 'Last 7 days', 'change': 2.0, 'changeType': 'positive' }
+    }
     return jsonify(trends), 200
 
+
+# ----------------------------------------------------------------------------------
+# Inicialización de la Aplicación
+# ----------------------------------------------------------------------------------
+with app.app_context():
+    # Intenta conectar a la DB y crea las tablas.
+    db.create_all()
+    
+    # Crea el usuario administrador si no existe
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
+        existing_email = User.query.filter_by(email='admin@elantar.com').first()
+        if not existing_email:
+            admin_password = bcrypt.generate_password_hash('admin123').decode('utf-8')
+            admin = User(
+                username='admin',
+                email='admin@elantar.com',
+                password_hash=admin_password,
+                is_admin=True,
+                referral_code=generate_referral_code()
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Admin user created successfully and tables migrated to PostgreSQL!")
+        else:
+            print("ℹ️ Admin user already exists with this email")
+    else:
+        print("ℹ️ Admin user already exists")
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Usamos '0.0.0.0' para que el contenedor escuche correctamente en todas las interfaces
+    app.run(host='0.0.0.0', debug=True, port=5000)

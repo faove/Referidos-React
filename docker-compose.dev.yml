@@ -1,4 +1,28 @@
+version: '3.8'
 services:
+  # 1. SERVICIO DE BASE DE DATOS POSTGRESQL (NUEVO)
+  db:
+    image: postgres:14-alpine # Imagen ligera y estable
+    container_name: elantar-db-dev
+    restart: always
+    environment:
+      # Credenciales para que el backend se conecte
+      POSTGRES_USER: flaskuser
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: elantar_referral_db 
+    volumes:
+      # Persistencia de los datos de PostgreSQL
+      - postgres_data_dev:/var/lib/postgresql/data # Usamos un volumen DEV separado
+    networks:
+      - elantar_net
+    # Healthcheck para asegurar que la DB está lista antes de que el Backend intente conectarse
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flaskuser -d elantar_referral_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. SERVICIO DE BACKEND (ACTUALIZADO)
   backend:
     build:
       context: ./backend
@@ -12,11 +36,21 @@ services:
     environment:
       - FLASK_ENV=development
       - FLASK_APP=app.py
-      - FLASK_DEBUG=1   
+      - FLASK_DEBUG=1
+      # NUEVO: URI de CONEXIÓN A POSTGRES
+      # El host es 'db' (el nombre del servicio)
+      - DATABASE_URL=postgresql://flaskuser:password@db:5432/elantar_referral_db
+      # NUEVO: Clave secreta para sesiones
+      - SECRET_KEY=your-secret-key-here-stronger-default
     networks:
       - elantar_net
     restart: unless-stopped
+    depends_on:
+      # MODIFICADO: Esperar hasta que la DB esté sana
+      db:
+        condition: service_healthy
 
+  # 3. SERVICIO DE FRONTEND (SIN CAMBIOS FUNCIONALES DE DB)
   frontend:
     build:
       context: ./frontend
@@ -32,13 +66,15 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true    
     depends_on:
-      - backend
+      - backend # El frontend sólo necesita que el backend esté arriba, no necesariamente sano
     networks:
       - elantar_net
     restart: unless-stopped
 
 volumes:
   backend_data:
+  # NUEVO: Volumen para la persistencia de la base de datos de desarrollo
+  postgres_data_dev:
 
 networks:
   elantar_net:
