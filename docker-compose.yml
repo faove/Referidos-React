@@ -20,7 +20,7 @@ services:
       # --- Servicio que apunta al backend ---
       - "traefik.http.services.elantar-api-service.loadbalancer.server.port=5000"
     networks:
-      - elantar_net
+      - net_service
     restart: unless-stopped
 
   frontend:
@@ -46,12 +46,12 @@ services:
     depends_on:
       - backend
     networks:
-      - elantar_net
+      - net_service
     restart: unless-stopped
 
 volumes:
   backend_data:
 
 networks:
-  elantar_net:
+  net_service:
     external: true
