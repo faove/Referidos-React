@@ -15,7 +15,7 @@ services:
       - "traefik.enable=true"
       # --- Regla para API ---
       - "traefik.http.routers.elantar-api-https.entrypoints=websecure"
-      - "traefik.http.routers.elantar-api-https.rule=Host(`panel.erpelantar.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.elantar-api-https.rule=Host(`lacasacowork.com`) && PathPrefix(`/api`)"
       - "traefik.http.routers.elantar-api-https.tls.certresolver=letsencrypt"
       # --- Servicio que apunta al backend ---
       - "traefik.http.services.elantar-api-service.loadbalancer.server.port=5000"
@@ -33,16 +33,16 @@ services:
       - "traefik.enable=true"
       # --- Regla para HTTP (redirección) ---
       - "traefik.http.routers.elantar-http.entrypoints=web"
-      - "traefik.http.routers.elantar-http.rule=Host(`panel.erpelantar.com`)"
+      - "traefik.http.routers.elantar-http.rule=Host(`lacasacowork.com`)"
       - "traefik.http.routers.elantar-http.middlewares=https-redirect"
       # --- Regla para HTTPS ---
       - "traefik.http.routers.elantar-https.entrypoints=websecure"
-      - "traefik.http.routers.elantar-https.rule=Host(`panel.erpelantar.com`)"
+      - "traefik.http.routers.elantar-https.rule=Host(`lacasacowork.com`)"
       - "traefik.http.routers.elantar-https.tls.certresolver=letsencrypt"
       # --- Servicio que apunta al frontend ---
       - "traefik.http.services.elantar-service.loadbalancer.server.port=80"
     environment:
-      - REACT_APP_API_URL=https://panel.erpelantar.com/api
+      - REACT_APP_API_URL=https://lacasacowork.com/api
     depends_on:
       - backend
     networks:
