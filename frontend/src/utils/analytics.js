@@ -1,6 +1,6 @@
 // Analytics utility functions for fetching dynamic data
 
-const API_BASE_URL = 'https://panel.erpelantar.com/api';
+const API_BASE_URL = 'https://lacasacowork.com/api';
 
 // Fetch user analytics trends
 export const fetchUserAnalytics = async () => {

@@ -14,7 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
-CORS(app, origins=['http://localhost:3000', 'http://frontend:3000', 'https://panel.erpelantar.com'], supports_credentials=True)
+CORS(app, origins=['http://localhost:3000', 'http://frontend:3000', 'https://lacasacowork.com'], supports_credentials=True)
 
 # Database Models
 class User(db.Model):
@@ -182,7 +182,7 @@ def get_referral_links():
             'clicks': link.clicks,
             'conversions': link.conversions,
             'created_at': link.created_at.isoformat(),
-            'url': f"https://panel.erpelantar.com/referral/{link.link_code}"
+            'url': f"https://lacasacowork.com/referral/{link.link_code}"
         })
     
     return jsonify(links_data), 200
@@ -206,7 +206,7 @@ def create_referral_link():
     return jsonify({
         'id': referral_link.id,
         'link_code': link_code,
-        'url': f"https://panel.erpelantar.com/referral/{link_code}",
+        'url': f"https://lacasacowork.com/referral/{link_code}",
         'created_at': referral_link.created_at.isoformat()
     }), 201
 

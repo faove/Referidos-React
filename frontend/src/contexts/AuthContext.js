@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await axios.get(`https://panel.erpelantar.com/api/user/profile`, {
+      const response = await axios.get(`https://lacasacowork.com/api/user/profile`, {
         withCredentials: true
       });
       setUser(response.data);
@@ -30,7 +30,7 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     try {
-      const response = await axios.post(`https://panel.erpelantar.com/api/login`, {
+      const response = await axios.post(`https://lacasacowork.com/api/login`, {
         username,
         password
       }, {
@@ -63,7 +63,7 @@ export function AuthProvider({ children }) {
         requestData.referralLinkCode = referralLinkCode;
       }
       
-      const response = await axios.post(`https://panel.erpelantar.com/api/register`, requestData);
+      const response = await axios.post(`https://lacasacowork.com/api/register`, requestData);
       
       // Clear the referral link code from localStorage after successful registration
       if (referralLinkCode) {
@@ -81,7 +81,7 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try {
-      await axios.post(`https://panel.erpelantar.com/api/logout`, {}, {
+      await axios.post(`https://lacasacowork.com/api/logout`, {}, {
         withCredentials: true
       });
     } catch (error) {

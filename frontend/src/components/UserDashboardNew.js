@@ -65,7 +65,7 @@ function UserDashboard() {
 
   const fetchReferralLinks = async () => {
     try {
-      const response = await axios.get('https://panel.erpelantar.com/api/referral-links', {
+      const response = await axios.get('https://lacasacowork.com/api/referral-links', {
         withCredentials: true
       });
       // Ensure response.data is an array
@@ -82,7 +82,7 @@ function UserDashboard() {
   const createReferralLink = async () => {
     setCreatingLink(true);
     try {
-      const response = await axios.post('https://panel.erpelantar.com/api/referral-links', {}, {
+      const response = await axios.post('https://lacasacowork.com/api/referral-links', {}, {
         withCredentials: true
       });
       setReferralLinks([...referralLinks, response.data]);

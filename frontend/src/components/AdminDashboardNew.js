@@ -58,7 +58,7 @@ function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('https://panel.erpelantar.com/api/admin/users', {
+      const response = await axios.get('https://lacasacowork.com/api/admin/users', {
         withCredentials: true
       });
       setUsers(response.data);

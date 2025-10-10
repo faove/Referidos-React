@@ -38,7 +38,7 @@ function ReferralPage() {
 
   const trackReferralClick = useCallback(async () => {
     try {
-      const response = await axios.get(`https://panel.erpelantar.com/api/referral/${linkCode}`);
+      const response = await axios.get(`https://lacasacowork.com/api/referral/${linkCode}`);
       setReferrer(response.data.referrer);
       
       // Store the referral link code in localStorage for later use during registration
@@ -56,7 +56,7 @@ function ReferralPage() {
 
   const handleConversion = async () => {
     try {
-      await axios.post(`https://panel.erpelantar.com/api/referral/${linkCode}/convert`);
+      await axios.post(`https://lacasacowork.com/api/referral/${linkCode}/convert`);
       setShowConfetti(true);
       toast.success('¡Gracias! Tu conversión ha sido registrada.');
       setTimeout(() => setShowConfetti(false), 5000);
